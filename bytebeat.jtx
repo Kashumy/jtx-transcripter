@@ -1,0 +1,112 @@
+-> import dv "storage";
+-> import * "functions";
+-> import * "terminal";
+-> import * "math";
+
+math = {sin: Math.sin,cos: Math.cos,tan: Math.tan,asin: Math.asin,acos: Math.acos,atan: Math.atan,atan2: Math.atan2,tanh: Math.tanh,floor: Math.floor,ceil: Math.ceil,round: Math.round,abs: Math.abs,sqrt: Math.sqrt,PI: Math.PI,E: Math.E}
+mousetouch = getPoint()
+gl = createscreen("gamecanvas", 99);
+bytebeatcode=`(t*'36364689'[t>>13&7]/12&128)+(((t>>12^(t>>12)-2)%11*t/4|t>>13)&127)`
+bytebeat = new Function('t', 'return (' + bytebeatcode + ');');
+audioContext = new (window.AudioContext || window.webkitAudioContext)();
+isPlaying = false; sampleRate = 44500; t = 0;
+scriptProcessor = 0; stopRequested = false; animationId = 0;
+analyser = audioContext.createAnalyser();
+analyser.fftSize = 512; norm255 = 1; gainValue = 0;
+bufferLength = analyser.frequencyBinCount; isplaying = 1;
+
+f setByteBeat(val):
+  if val == 0;
+    if scriptProcessor;
+      scriptProcessor.disconnect();
+      isplaying = 0;
+    end;
+  else if typeof(val) == "string" && val.indexOf("=") > 0;
+    parts = val.split("=");
+    cmd = parseInt(parts[0]);
+    arg = parseFloat(parts[1]);
+    if cmd == 1;
+      sampleRate = arg;
+    else if cmd == 2;
+      norm255 = arg;
+    end;
+  else if val == 3;
+    t = 0;
+  end;
+end;
+
+f main():
+ point = mousetouch()
+ if point.x;
+ if isplaying = 0;
+ if (audioContext.state === "suspended") ;
+    audioContext.resume();
+ end;
+ if (audioContext.state === "running") ;
+    isplaying = 1;
+ end;
+ scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+ if isplaying = 1;
+ scriptProcessor.onaudioprocess = (event) => {
+     outputBuffer = event.outputBuffer.getChannelData(0);
+     for i = 0, i < outputBuffer.length, i++ ;
+        if (norm255) ;
+                if (gainValue == 0 || gainValue == NaN) ; outputBuffer[i] = ((bytebeat(t) & 255) - 128) / 128; 
+                else ;
+                    outputBuffer[i] = (((bytebeat(t) & 255) - 128) / 128) * (gainValue / 1000);
+                end;
+         else ;
+                if (gainValue == 0 || gainValue == NaN) ;
+                outputBuffer[i] = (bytebeat(t) / 128) - 1 ;
+                else ;
+                outputBuffer[i] = ((bytebeat(t) / 128) - 1) * (gainValue / 1000);
+                end;
+         end;
+            t += sampleRate / 50000;
+    end;
+ }
+ scriptProcessor.connect(analyser);  analyser.connect(audioContext.destination);
+ end; end; end;
+ wait 20; main(); end; end;
+main()
+f pauseAudio():
+ if scriptProcessor;
+    scriptProcessor.disconnect();
+ end;
+ if analyser;
+    analyser.disconnect();
+ end;
+ isplaying = 0;
+end;
+f editor ():
+  printf("\x1B[32m Bytebeat\x1B[0m")
+printf("play,beat,clear,stop");
+in1 = Input('enter', (op) => {
+  if op = "clear";
+  clrscr()
+  editor()
+  else if op = "beat";
+  printf("Write extension:");
+  in3 = Input('enter', (txt) => {
+    bytebeatcode=txt
+    bytebeat = new Function('t', 'return (' + bytebeatcode + ');');
+    editor();
+  },bytebeatcode);
+  else if op = "play";
+  printf("is playing");
+  t=0;
+  isplaying = 0;
+  editor()
+  else if op = "stop";
+  printf("paused");
+  pauseAudio()
+  isplaying = 1;
+  editor()
+  else;
+  printf("Unknown setting");
+  editor();
+  end;
+})
+
+end;
+editor();

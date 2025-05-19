@@ -1,0 +1,147 @@
+
+-> import dv "storage";
+-> import * "functions";
+-> import * "terminal";
+math = {sin: Math.sin,cos: Math.cos,tan: Math.tan,asin: Math.asin,acos: Math.acos,atan: Math.atan,atan2: Math.atan2,tanh: Math.tanh,floor: Math.floor,ceil: Math.ceil,round: Math.round,abs: Math.abs,sqrt: Math.sqrt,PI: Math.PI,E: Math.E
+}
+mousetouch = getPoint()
+gl = createscreen("gamecanvas", 99);
+bytebeat=`
+// music by kashumy github
+ t*=0.8,t=t% (524000*2),
+d=16,d2=16*2,mul2=
+((5) & -(((t/d2 >> 12) & 3) == 0)) +
+((5) & -(((t/d2 >> 12) & 3) == 1)) +
+((4) & -(((t/d2 >> 12) & 3) == 2)) +
+((4) & -(((t/d2 >> 12) & 3) == 3)) +
+0,decay = 200000,
+env = 256 >> (t/decay),mul1=
+((3) & -(((t/d >> 12) & 3) == 0)) +
+((6) & -(((t/d >> 12) & 3) == 1)) +
+((mul2) & -(((t/d >> 12) & 3) == 2)) +
+((mul2) & -(((t/d >> 12) & 3) == 3)) +
+0,rvrb=(t+((t >> 12) & 3)/d)/2000000,
+main3=
+((t*(mul1/12) * 2) & -(((t >> 12) & 3) == 0))/rvrb +
+((t*(mul1/12) * 3) & -(((t >> 12) & 3) == 5))/rvrb +
+((t*(mul1/12) * 5) & -(((t >> 12) & 3) == 2))/rvrb +
+((t*(mul1/12) * 0) & -(((t >> 12) & 3) == 3))/rvrb ,
+main1=
+((t*(mul1/12) * 2) & -(((t >> 12) & 3) == 0))+
+((t*(mul1/12) * 3) & -(((t >> 12) & 3) == 5)) +
+((t*(mul1/12) * 5) & -(((t >> 12) & 3) == 2)) +
+((t*(mul1/12) * 0) & -(((t >> 12) & 3) == 3)) ,
+timeadd=1000,
+main4 = (
+(((t+timeadd)*(mul1/12) * 2) & -(((t >> 12) & 3) == 0)) +
+(((t+timeadd)*(mul1/12) * 3) & -(((t >> 12) & 3) == 5)) +
+(((t+timeadd)*(mul1/12) * 5) & -(((t >> 12) & 3) == 2)) +
+(((t+timeadd)*(mul1/12) * 0) & -(((t >> 12) & 3) == 3))
+) >> 1, loop=300000,
+kick=((t >>8)&1)*(( [1,0,0,1,0,0,1,1][(t >>13)&7] )*12) * (1+
+((t >>4)&2)) & 255,
+sinebass=Math.floor((Math.sin((t/150)*6.28318)+1)*10.5*(1-((t%524000)/524000))),
+kick | main1 | main4 | main3 | sinebass
+`
+bytebeat = new Function('t', 'return (' + bytebeat + ');');
+  audioContext = new (window.AudioContext || window.webkitAudioContext)();
+ isPlaying = false; sampleRate = 45172;  t = 0;
+ scriptProcessor=0; stopRequested = false; animationId=0; bgAnimationId=0;
+ analyser = audioContext.createAnalyser();
+analyser.fftSize = 512; norm255=1; gainValue = 0;
+ bufferLength = analyser.frequencyBinCount; isplaying=0;
+f main():
+ point = mousetouch()
+ if point.x;
+ if isplaying=0;
+ if (audioContext.state === "suspended") ;
+    audioContext.resume();
+ end;
+ if (audioContext.state === "running") ;
+    isplaying = 1;
+ end;
+ scriptProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+ if isplaying = 1;
+ scriptProcessor.onaudioprocess = (event) => {
+     outputBuffer = event.outputBuffer.getChannelData(0);
+     for i = 0, i < outputBuffer.length, i++ ;
+        if (norm255) ;
+                if (gainValue == 0 || gainValue == NaN) ; outputBuffer[i] = ((bytebeat(t) & 255) - 128) / 128; 
+                else ;
+                    outputBuffer[i] = (((bytebeat(t) & 255) - 128) / 128) * (gainValue / 1000);
+                end;
+         else ;
+                if (gainValue == 0 || gainValue == NaN) ;
+                outputBuffer[i] = (bytebeat(t) / 128) - 1 ;
+                else ;
+                outputBuffer[i] = ((bytebeat(t) / 128) - 1) * (gainValue / 1000);
+                end;
+         end;
+            t += sampleRate / 50000;
+    end;
+ }
+ 
+  scriptProcessor.connect(analyser);
+  analyser.connect(audioContext.destination);
+ end;
+ end;
+ end;
+ wait 20:
+ main()
+end;
+end;
+main()
+
+
+
+f loop2():
+printf("\x1B[32m Calculator\x1B[0m")
+printf("\x1B[36m1\x1B[0m+\x1B[31m,\x1B[0m\x1B[36m2\x1B[0m-\x1B[31m,\x1B[0m\x1B[36m3\x1B[0m*\x1B[31m,\x1B[0m\x1B[36m4\x1B[0m/\x1B[31m,\x1B[0m\x1B[36m 5\x1B[0mcalc \x1B[36m0\x1B[0mclear\n");
+in1 = Input('enter', (op) => {
+if op = "0";
+clrscr()
+loop2()
+else if op = "5";
+    printf("Write extension:");
+in3 = Input('enter', (txt) => {
+    if (/^[\d\s\+\-\*\/\%\(\)\.\&\|\^\~\<\>\,a-zA-Z_]+$/.test(txt));
+        try {
+            result = Function("with(this) { return " + txt + "}").call(math);
+            printf("Output: " + result);
+        } catch (e) {
+            printf(" error occurred !");
+        }
+    else ;
+        printf("not allowed symbols !");
+    end;
+    loop2();
+});
+     else if op = "1" || op = "2" || op = "3" || op = "4";
+        printf("1num :");
+        in2 = Input('enter', (a) => {
+            printf("2num :");
+            in3 = Input('enter', (b) => {
+                if op = "1";
+                    result = parseFloat(a) + parseFloat(b);
+                else if op = "2";
+                    result = parseFloat(a) - parseFloat(b);
+                else if op = "3";
+                    result = parseFloat(a) * parseFloat(b);
+                else if op = "4";
+                    result = parseFloat(a) / parseFloat(b);
+                end;
+                clrscr()
+                printf("output: " + result);
+if b = 0 || a = 0;
+printf("\t Math error!");
+end;
+                loop2();
+            })
+        })
+    else;
+        printf("Unknown setting");
+        loop2();
+    end;
+})
+end;
+loop2();
