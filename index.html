@@ -6,16 +6,14 @@
   <title>JTX Mini File Manager</title>
   <style>
     html { position: fixed; width: 100vw; height: 100vh; top: 0; left: 0; margin: 0; padding: 0; }
-    body { margin: 0; padding: 16px; font-family: sans-serif; }
+    body { margin: 0; padding: 0px; font-family: sans-serif; }
     button { margin-right: 8px; }
-    pre {
+    #documentation1 {
       white-space: pre-wrap;
       word-wrap: break-word;
       overflow-wrap: break-word;
       background: #eee;
       position: relative;
-      left: -8px;
-      width: 100vw;
       height: calc(100vh + 15px);
       color: #333;
       padding: 8px;
@@ -51,22 +49,40 @@
   </style>
 </head>
 <body>
-
+<div style="padding:10px">
   <button id="run-jtx">run jtx</button>
   <button id="raw-editor">raw jtx editor</button>
   <button id="to-html5">raw jtx to html5</button>
-
-  <pre id="documentation1">
+</div>
+  <pre id="documentation1" style="width:100%; height: calc(100vh - 80px); overflow: hidden scroll;">
 (0 0.3 0.2) jtx version 1.0-;
-
 (0 0.8 0.5) you can distribute jtx transcripter for free and even for commercial purposes-;
-(0 1 0) License-;
+
+(0 0.8 0) License-;
 (0 0 0) This software is free to use for any purpose.-;
 (0 0 0) Commercial usage is fully allowed, including selling products based on this software.-;
 (0 0 0) Redistribution, modification, and incorporation into other software or systems is permitted without restriction.-;
 (0 0 0) You may create and sell your own distributions of this program.-;
 (0 0 0) No warranty is provided. Use at your own risk.-;
 (0 0.5 0) all programs created by the user belong to the user and it is the user who decides what to do with them-;
+
+(0.7 0 0.7)   Jtx Coding Guide: -;
+(0.5 0.2 0.7) fun name(args); end; -; - create function 
+if -> import * "functions"; 
+(0.5 0.2 0.7) f name(args); end; -; - create function 
+(0.5 0.2 0.7) printf("hello world") -; - print's text in console
+-> import * "terminal" - shows console
+(0.5 0.2 0.7) for let i=0,i < array.. ,i++ ; end; -; - for function 
+(0.5 0.2 0.7) name = Input("type",(data)=>{ },setvalue) -; - create input "type"  - "input","enter","submit" submit needs name.submit() to submit code
+(0.5 0.2 0.7) name = InputFile((output,filename)=>{ }) -; - pickup file
+(0.5 0.2 0.7) graphics = createscreen("id",zindex) -; - create screen its need to show console
+(0.5 0.2 0.7) clrscr() -; - clears terminal 
+(0.5 0.2 0.7) DownloadText(text,filename) -; - downloads text
+(0.5 0.2 0.7) wait ms; end; -; - executing script inside ms is milliseconds for example (0.3 0.5 0.6)"wait 2000; end;"-; 2s
+(0.5 0.2 0.7) -> import storagevar "storage" -; - createstorage 
+staragevar.save(slot,data) ; storagevar.load(slot,(data)=>{ })
+(0.5 0.2 0.7) namepoint = getPoint() -; - setup variable for get point 
+^~ (0.5 0.5 0.7) getpoit2= namepoint()-; - gets point position {x,y, button}
   </pre>
 
   <script src="jtxmini.js"></script>
@@ -110,8 +126,8 @@ pre.innerHTML = parseColorsTFetF2(pre.innerHTML);
   const overlay = document.createElement('div'); overlay.id = 'overlay';
   const fm = document.createElement('div'); fm.id = 'file-manager';
   fm.innerHTML = `
-    <div>Plik .jtx: <input type="file" id="jm-jtx" accept=".jtx"></div>
-    <div>Inne pliki: <input type="file" id="jm-files" multiple></div>
+    <div>File .jtx: <input type="file" id="jm-jtx" accept=".jtx"></div>
+    <div>Other files: <input type="file" id="jm-files" multiple></div>
     <ul id="file-list"></ul>
     <button id="jm-download">Download resources</button>
     <button id="jm-close">Close</button>
@@ -139,7 +155,7 @@ pre.innerHTML = parseColorsTFetF2(pre.innerHTML);
       rdr.onload = () => {
         const mime = ext === 'jpg' ? 'jpeg' : ext;
         const base64 = rdr.result.split(',')[1];
-        resources[name] = `data:image/${mime};base64,${base64}`;
+        resources[name] = `${base64}`;
       };
       rdr.readAsDataURL(file);
     } else if (['mp3', 'ogg', 'wav', 'mid'].includes(ext)) {
@@ -161,22 +177,52 @@ pre.innerHTML = parseColorsTFetF2(pre.innerHTML);
   fm.querySelector('#jm-files').addEventListener('change', e => Array.from(e.target.files).forEach(addFile));
 
   fm.querySelector('#jm-download').addEventListener('click', () => {
-    const blob = new Blob(
-      [`resources=${JSON.stringify(resources, null, 2)}\n\n${jtxContent}`],
-      { type: 'text/plain' }
-    );
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'resources.txt';
-    a.click();
+     
+    DownloadText(`resources=${JSON.stringify(resources, null, 2)}\n\n${jtxContent}`,"jtx-raw.jtx")
+     
   });
 
   fm.querySelector('#jm-close').addEventListener('click', () => {
     overlay.remove(); fm.remove();
   });
 });
+function transcriptJtxToJs(jtxCode,name) {
+  const jsScript = jtxCode ;
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>${name}</title>
+</head>
+<body>
+<script src="./jtxmini.js"><\/script>
+<script type="jtx" >
+${jsScript}
+<\/script>
+</body>
+</html>
+`;
+}
+document.getElementById('to-html5').addEventListener('click', () => {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.jtx';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = () => {
+      const fileName = file.name.replace(/\.jtx$/i, '');
+      const htmlOutput = transcriptJtxToJs(reader.result, fileName);
+      DownloadText(htmlOutput, fileName + ".html");
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+});
 
 
   </script>
+  
 </body>
 </html>
